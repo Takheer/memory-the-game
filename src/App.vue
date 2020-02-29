@@ -8,15 +8,16 @@
       <p v-if="!isGameStarted && !isPlayerWon">
         После начала игры у вас будет 10 секунд, чтобы запомнить все клетки. Потом надо отгадать
       </p>
-      <transition-group v-else-if="isGameStarted && !isPlayerWon"
-                        name="flip-list" tag="div"
-                        class="card-container mx-auto" appear>
-        <app-tile v-for="item in items"
-                  :key="item.index"
-                  :item="item" @tileClicked="handleClick"></app-tile>
-      </transition-group>
+      <div v-else-if="isGameStarted && !isPlayerWon">
+        <app-timer :current-seconds="-10" @timerStopped="onTimerStop"></app-timer>
+        <transition-group name="flip-list" tag="div" class="card-container mx-auto" appear>
+          <app-tile v-for="item in items"
+                    :key="item.index"
+                    :item="item" @tileClicked="handleClick"></app-tile>
+        </transition-group>
+      </div>
       <p v-else-if="isPlayerWon" class="mt-5">
-        Вы выиграли! Однажды тут появится время, за которое вы выиграли
+        Вы выиграли! Однажды тут появится время ({{ time.minutes }}:{{ time.seconds }}), за которое вы выиграли
       </p>
     </transition>
   </div>
@@ -24,6 +25,8 @@
 
 <script>
 import Tile from "./components/Tile";
+import Timer from "./components/Timer";
+import { eventBus } from "./main";
 
 export default {
   name: 'App',
@@ -42,13 +45,17 @@ export default {
       itemsGuessed: [],
       isGameStarted: false,
       isPlayerWon: false,
-      isClickPermitted: false
+      isClickPermitted: false,
+      time: {
+        minutes: 0,
+        seconds: 0
+      },
+      initialDelay: null
     }
   },
   watch: {
     itemsClicked() {
       if (this.sameTilesClicked()) {
-        console.log(`items are guessed`);
         this.itemsGuessed.push(this.itemsClicked[0]);
         this.itemsGuessed.push(this.itemsClicked[1]);
         this.itemsClicked = [];
@@ -65,16 +72,24 @@ export default {
     },
     // Проверяет выигрыш
     itemsGuessed() {
-      console.log(this.itemsGuessed);
       if (this.itemsGuessed.length === 36) {
-        this.$emit('playerWon')
+        this.isPlayerWon = true;
+        this.isGameStarted = false;
       }
     },
     deep: true
   },
   methods: {
+    reset() {
+      eventBus.$emit('resetAll');
+    },
+    onTimerStop(minutes, seconds) {
+      this.time.minutes = minutes;
+      this.time.seconds = seconds;
+    },
     startNewGame() {
       this.resetData();
+      this.reset();
       for (let i = 0; i < 36; i++) {
         this.items.push({
           index: i,
@@ -85,8 +100,7 @@ export default {
 
       this.items = this.shuffle(this.items);
 
-      setTimeout(() => {
-        console.log('setting timeout');
+      this.initialDelay = setTimeout(() => {
         this.setAllInvisible(this.items);
         this.isClickPermitted = true;
       }, 11000);
@@ -97,9 +111,7 @@ export default {
       if (!this.isClickPermitted || this.itemsGuessed.includes(item)) {
         return;
       }
-      console.log(item);
       this.itemsClicked.push(item);
-      console.log(`itemClicked length is ${this.itemsClicked.length}`);
       item.visible = true;
     },
 
@@ -125,13 +137,17 @@ export default {
       }
     },
     resetData() {
+      this.isGameStarted = false;
+      this.isPlayerWon = false;
       this.itemsClicked = [];
       this.itemsGuessed = [];
       this.items = [];
+      clearTimeout(this.initialDelay)
     }
   },
   components: {
-    appTile: Tile
+    appTile: Tile,
+    appTimer: Timer
   }
 }
 </script>
