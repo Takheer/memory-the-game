@@ -29,9 +29,9 @@
     .icon-card {
         cursor: pointer;
         display: inline-flex;
-        border: 1px solid rgba(0,0,0, 0.25);
-        width: 100px;
         height: 100px;
+        width: 100px;
+        border: 1px solid rgba(0,0,0, 0.25);
         i {
             margin: auto;
             font-size: 70px;
@@ -51,6 +51,24 @@
             &-active {
                 transition: opacity .2s;
                 opacity: 0;
+            }
+        }
+    }
+    @media screen and (max-width: 768px) {
+        .icon-card {
+            height: 75px;
+            width: 75px;
+            i {
+                font-size: 53px!important;
+            }
+        }
+    }
+    @media screen and (max-width: 576px) {
+        .icon-card {
+            height: 50px;
+            width: 50px;
+            i {
+                font-size: 35px!important;
             }
         }
     }

@@ -63,7 +63,6 @@
         },
         methods: {
             startNewGame() {
-                console.log('new game started');
                 this.resetData();
                 for (let i = 0; i < 36; i++) {
                     this.items.push({
@@ -124,7 +123,6 @@
         created() {
             this.startNewGame();
             eventBus.$on('resetAll', () => {
-                console.log('reset all');
                 this.startNewGame()
             }).$on('timerStopped', time => {
                 this.time = time;
@@ -133,6 +131,23 @@
     }
 </script>
 
-<style scoped>
-
+<style lang="scss" scoped>
+    .card-container {
+        display: flex;
+        flex-wrap: wrap;
+        width: 600px;
+        height: 600px;
+    }
+    @media screen and (max-width: 768px) {
+        .card-container {
+            height: 450px!important;
+            width: 450px!important;
+        }
+    }
+    @media screen and (max-width: 576px) {
+        .card-container {
+            height: 300px!important;
+            width: 300px!important;
+        }
+    }
 </style>

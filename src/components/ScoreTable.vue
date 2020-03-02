@@ -45,9 +45,9 @@
                 .then(() => {
                     this.scoresReady = true;
                 })
-                .catch((error) => {
-                    console.log('error in loading: ', error);
-                })
+                //.catch((error) => {
+                //    console.log('error in loading: ', error);
+                //})
         }
     }
 </script>

@@ -36,7 +36,6 @@
         },
         destroyed() {
             this.stopTimer();
-            console.log('timer stopped and event emitted');
             eventBus.$emit('timerStopped', {
                 minutes: this.minutes,
                 seconds: this.seconds

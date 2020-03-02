@@ -1,14 +1,15 @@
 <template>
   <div class="container">
-    <h1 class="display-4 mb-4">Memory. The Game</h1>
-    <span>
-      <button class="btn btn-primary" @click="reset" :disabled="userName === ''">Новая игра</button>
-      <button class="btn btn-primary" @click="dbTest" :disabled="userName === ''">dbTest</button>
-    </span>
+    <h1 class="display-4 mb-4 text-center">Memory. The Game</h1>
+    <div class="d-flex align-items-center mb-4">
+      <button class="btn btn-primary mx-auto" @click="reset" :disabled="userName === ''">Новая игра</button>
+    </div>
     <transition name="fade" mode="out-in" appear>
-      <div v-if="!isGameStarted && !isPlayerWon">
-        <label for="userName">Введите ваше имя</label>
-        <input type="text" id="userName" name="userName" class="form-control w-25" placeholder="John Doe" v-model="userName">
+      <div class="d-flex flex-column align-items-center" v-if="!isGameStarted && !isPlayerWon">
+        <div class="card p-3">
+          <label for="userName">Введите ваше имя</label>
+          <input type="text" id="userName" name="userName" class="form-control" placeholder="John Doe" v-model="userName">
+        </div>
         <p class="lead mt-4">
           После начала игры у вас будет 10 секунд, чтобы запомнить все клетки. После этого нужно как можно быстрее открыть все клетки: нажмите на клетку, а затем найдите точно такую же.
         </p>
@@ -19,6 +20,7 @@
         <p class="lead mt-5">
           Вы выиграли! Ваше время - <strong>{{ time.minutes }}:{{ time.seconds }}</strong>
         </p>
+        <p class="h3">Таблица лидеров:</p>
         <app-score-table :limit="10"></app-score-table>
       </div>
     </transition>
@@ -60,29 +62,18 @@ export default {
       return prettifyTime(value);
     },
     submitResult() {
-      console.log(this.userName);
       let userRef = db.collection('scores').doc(this.userName);
       let seconds = this.time.minutes * 60 + this.time.seconds;
       userRef.get().then(snapshot => {
         let playerExists = snapshot.exists;
         let playerData = snapshot.data();
-        console.log(playerExists);
         if (!playerExists || playerData.time > seconds) {
-          console.log(seconds);
           userRef.set({
             time: seconds,
-          }).then(function() {
-            console.log("player successfully added!");
           })
         }
       });
 
-    },
-    dbTest() {
-      console.log(this.userName);
-      db.collection('scores').doc(this.userName).get().then(snapshot => {
-        console.log(snapshot)
-      });
     }
   },
   components: {
@@ -101,12 +92,6 @@ export default {
 <style lang="scss">
   button:disabled {
     cursor: not-allowed;
-  }
-  .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    width: 600px;
-    height: 600px;
   }
   .flip-list-move {
     transition: transform .5s;
