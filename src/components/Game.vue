@@ -146,8 +146,8 @@
     }
     @media screen and (max-width: 576px) {
         .card-container {
-            height: 300px!important;
-            width: 300px!important;
+            height: 300px !important;
+            width: 300px !important;
         }
     }
 </style>
