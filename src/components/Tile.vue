@@ -26,6 +26,18 @@
 </script>
 
 <style lang="scss" scoped>
+    .icon-card {
+        cursor: pointer;
+        display: inline-flex;
+        border: 1px solid rgba(0,0,0, 0.25);
+        width: 100px;
+        height: 100px;
+        i {
+            margin: auto;
+            font-size: 70px;
+        }
+    }
+
     .fade {
         &-enter {
             opacity: 0!important;

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <p class="text-center">
+        <p class="text-center" :class="{'text-green': seconds >= 0, 'text-red': seconds < 0}">
             <template v-if="seconds < 0">
                 - 00:{{ prettifyNumber(seconds) }}
             </template>
@@ -13,6 +13,7 @@
 
 <script>
     import { eventBus } from "../main";
+    import { prettifyTime } from "../timeHelper";
 
     export default {
         name: "Timer",
@@ -35,11 +36,15 @@
         },
         destroyed() {
             this.stopTimer();
-            this.$emit('timerStopped', this.minutes, this.seconds);
+            console.log('timer stopped and event emitted');
+            eventBus.$emit('timerStopped', {
+                minutes: this.minutes,
+                seconds: this.seconds
+            });
         },
         methods: {
             startTimer() {
-                this.stopTimer()
+                this.stopTimer();
                 this.currentSeconds = -10;
                 this.timer = setInterval(() => {
                     this.currentSeconds++;
@@ -48,14 +53,8 @@
             stopTimer() {
                 clearTimeout(this.timer);
             },
-
             prettifyNumber(value) {
-                value = Math.abs(value)
-                if (value < 10) {
-                    return "0" + value
-                } else {
-                    return value
-                }
+                return prettifyTime(value);
             }
         },
         created() {
@@ -67,8 +66,14 @@
 </script>
 
 <style lang="scss" scoped>
-p {
-    font-family: monospace;
-    font-size: 5vh;
-}
+    p {
+        font-family: monospace;
+        font-size: 5vh;
+    }
+    .text-red {
+        color: lightcoral;
+    }
+    .text-green {
+        color: olivedrab;
+    }
 </style>

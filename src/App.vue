@@ -2,157 +2,106 @@
   <div class="container">
     <h1 class="display-4 mb-4">Memory. The Game</h1>
     <span>
-      <button class="btn btn-primary" @click="startNewGame">Новая игра</button>
+      <button class="btn btn-primary" @click="reset" :disabled="userName === ''">Новая игра</button>
+      <button class="btn btn-primary" @click="dbTest" :disabled="userName === ''">dbTest</button>
     </span>
     <transition name="fade" mode="out-in" appear>
-      <p v-if="!isGameStarted && !isPlayerWon">
-        После начала игры у вас будет 10 секунд, чтобы запомнить все клетки. Потом надо отгадать
-      </p>
-      <div v-else-if="isGameStarted && !isPlayerWon">
-        <app-timer :current-seconds="-10" @timerStopped="onTimerStop"></app-timer>
-        <transition-group name="flip-list" tag="div" class="card-container mx-auto" appear>
-          <app-tile v-for="item in items"
-                    :key="item.index"
-                    :item="item" @tileClicked="handleClick"></app-tile>
-        </transition-group>
+      <div v-if="!isGameStarted && !isPlayerWon">
+        <label for="userName">Введите ваше имя</label>
+        <input type="text" id="userName" name="userName" class="form-control w-25" placeholder="John Doe" v-model="userName">
+        <p class="lead mt-4">
+          После начала игры у вас будет 10 секунд, чтобы запомнить все клетки. После этого нужно как можно быстрее открыть все клетки: нажмите на клетку, а затем найдите точно такую же.
+        </p>
       </div>
-      <p v-else-if="isPlayerWon" class="mt-5">
-        Вы выиграли! Однажды тут появится время ({{ time.minutes }}:{{ time.seconds }}), за которое вы выиграли
-      </p>
+      <the-game @gameOver="onGameOver"
+                v-else-if="isGameStarted && !isPlayerWon"></the-game>
+      <div v-else-if="isPlayerWon">
+        <p class="lead mt-5">
+          Вы выиграли! Ваше время - <strong>{{ time.minutes }}:{{ time.seconds }}</strong>
+        </p>
+        <app-score-table :limit="10"></app-score-table>
+      </div>
     </transition>
   </div>
 </template>
 
 <script>
-import Tile from "./components/Tile";
-import Timer from "./components/Timer";
+import Game from "./components/Game";
 import { eventBus } from "./main";
+import { db } from "./db";
+import { prettifyTime } from "./timeHelper";
+import ScoreTable from "./components/ScoreTable";
+
 
 export default {
   name: 'App',
   data() {
     return {
-      icons: [
-        "fa-angry", "fa-calendar-alt", "fa-comment-dots",
-        "fa-file-code", "fa-eye", "fa-folder-open",
-        "fa-flag",  "fa-gem", "fa-hand-point-up",
-        "fa-kiss-wink-heart", "fa-paper-plane", "fa-trash-alt",
-        "fa-snowflake", "fa-star", "fa-keyboard",
-        "fa-images", "fa-bell", "fa-file-pdf"
-      ],
-      items: [],
-      itemsClicked: [],
-      itemsGuessed: [],
+      userName: '',
       isGameStarted: false,
       isPlayerWon: false,
-      isClickPermitted: false,
-      time: {
-        minutes: 0,
-        seconds: 0
-      },
-      initialDelay: null
+      time: {},
+      scores: [],
+      scoresReady: false
     }
-  },
-  watch: {
-    itemsClicked() {
-      if (this.sameTilesClicked()) {
-        this.itemsGuessed.push(this.itemsClicked[0]);
-        this.itemsGuessed.push(this.itemsClicked[1]);
-        this.itemsClicked = [];
-      }
-      // Не давать игре вести себя ебано, если нажато больше клеток, чем нужно
-      else if (this.itemsClicked.length >= 2) {
-        this.isClickPermitted = false;
-        setTimeout(() => {
-          this.setAllInvisible(this.itemsClicked);
-          this.itemsClicked = [];
-          this.isClickPermitted = true;
-        }, 1000);
-      }
-    },
-    // Проверяет выигрыш
-    itemsGuessed() {
-      if (this.itemsGuessed.length === 36) {
-        this.isPlayerWon = true;
-        this.isGameStarted = false;
-      }
-    },
-    deep: true
   },
   methods: {
     reset() {
+      this.isGameStarted = true;
+      this.isPlayerWon = false;
       eventBus.$emit('resetAll');
     },
-    onTimerStop(minutes, seconds) {
-      this.time.minutes = minutes;
-      this.time.seconds = seconds;
-    },
-    startNewGame() {
-      this.resetData();
-      this.reset();
-      for (let i = 0; i < 36; i++) {
-        this.items.push({
-          index: i,
-          icon: this.icons[Math.floor(i/2)],
-          visible: true
-        });
-      }
-
-      this.items = this.shuffle(this.items);
-
-      this.initialDelay = setTimeout(() => {
-        this.setAllInvisible(this.items);
-        this.isClickPermitted = true;
-      }, 11000);
-      this.isGameStarted = true;
-    },
-
-    handleClick(item) {
-      if (!this.isClickPermitted || this.itemsGuessed.includes(item)) {
-        return;
-      }
-      this.itemsClicked.push(item);
-      item.visible = true;
-    },
-
-    sameTilesClicked() {
-      return this.itemsClicked.length === 2 &&
-              this.itemsClicked[0].icon === this.itemsClicked[1].icon &&
-              this.itemsClicked[0].index !== this.itemsClicked[1].index
-    },
-
-    shuffle(a) {
-      let j, x, i;
-      for (i = a.length - 1; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
-        x = a[i];
-        a[i] = a[j];
-        a[j] = x;
-      }
-      return a;
-    },
-    setAllInvisible(items) {
-      for (let item of items) {
-        item.visible = false
-      }
-    },
-    resetData() {
+    onGameOver(time) {
+      this.isPlayerWon = true;
       this.isGameStarted = false;
-      this.isPlayerWon = false;
-      this.itemsClicked = [];
-      this.itemsGuessed = [];
-      this.items = [];
-      clearTimeout(this.initialDelay)
+      this.time = time;
+    },
+    prettifyNumber(value) {
+      return prettifyTime(value);
+    },
+    submitResult() {
+      console.log(this.userName);
+      let userRef = db.collection('scores').doc(this.userName);
+      let seconds = this.time.minutes * 60 + this.time.seconds;
+      userRef.get().then(snapshot => {
+        let playerExists = snapshot.exists;
+        let playerData = snapshot.data();
+        console.log(playerExists);
+        if (!playerExists || playerData.time > seconds) {
+          console.log(seconds);
+          userRef.set({
+            time: seconds,
+          }).then(function() {
+            console.log("player successfully added!");
+          })
+        }
+      });
+
+    },
+    dbTest() {
+      console.log(this.userName);
+      db.collection('scores').doc(this.userName).get().then(snapshot => {
+        console.log(snapshot)
+      });
     }
   },
   components: {
-    appTile: Tile,
-    appTimer: Timer
+    theGame: Game,
+    appScoreTable: ScoreTable
+  },
+  created() {
+    eventBus.$on('timerStopped', time => {
+      this.time = time;
+      this.submitResult();
+    })
   }
 }
 </script>
 
 <style lang="scss">
+  button:disabled {
+    cursor: not-allowed;
+  }
   .card-container {
     display: flex;
     flex-wrap: wrap;
@@ -161,18 +110,6 @@ export default {
   }
   .flip-list-move {
     transition: transform .5s;
-  }
-
-  .icon-card {
-    cursor: pointer;
-    display: inline-flex;
-    border: 1px solid rgba(0,0,0, 0.25);
-    width: 100px;
-    height: 100px;
-    i {
-      margin: auto;
-      font-size: 70px;
-    }
   }
 
   .fade {
